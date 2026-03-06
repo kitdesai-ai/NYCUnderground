@@ -1,16 +1,13 @@
 import SwiftUI
 import CoreLocation
 
-/// A high-performance zoomable map view that renders a bundled PDF at high resolution
+/// A high-performance zoomable map view that displays a bundled subway map image
 /// and overlays the user's current location as a pulsing blue dot.
 ///
 /// Uses UIScrollView for smooth, native-feeling pinch-to-zoom and pan.
-/// The PDF is rendered once to a bitmap at `renderScale`× resolution.
 struct ZoomableMapView: UIViewRepresentable {
     var userLocation: CLLocation?
-
-    /// Must match CoordinateMapper.renderScale
-    private let renderScale: CGFloat = 4.0
+    var calibrationMode: Bool = false
 
     func makeCoordinator() -> Coordinator {
         Coordinator()
@@ -37,31 +34,37 @@ struct ZoomableMapView: UIViewRepresentable {
         let dotContainer = UIView()
         dotContainer.isUserInteractionEnabled = false
 
+        let dotSize: CGFloat = 80
+        let pulseSize: CGFloat = 200
+        let accuracySize: CGFloat = 140
+
         // Pulse ring
-        let pulse = UIView(frame: CGRect(x: -16, y: -16, width: 48, height: 48))
+        let pulse = UIView(frame: CGRect(x: (dotSize - pulseSize) / 2, y: (dotSize - pulseSize) / 2,
+                                         width: pulseSize, height: pulseSize))
         pulse.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.2)
-        pulse.layer.cornerRadius = 24
+        pulse.layer.cornerRadius = pulseSize / 2
         dotContainer.addSubview(pulse)
 
         // Accuracy ring
-        let accuracyRing = UIView(frame: CGRect(x: -8, y: -8, width: 32, height: 32))
+        let accuracyRing = UIView(frame: CGRect(x: (dotSize - accuracySize) / 2, y: (dotSize - accuracySize) / 2,
+                                                width: accuracySize, height: accuracySize))
         accuracyRing.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.12)
-        accuracyRing.layer.cornerRadius = 16
+        accuracyRing.layer.cornerRadius = accuracySize / 2
         dotContainer.addSubview(accuracyRing)
 
         // Core dot
-        let dot = UIView(frame: CGRect(x: 0, y: 0, width: 16, height: 16))
+        let dot = UIView(frame: CGRect(x: 0, y: 0, width: dotSize, height: dotSize))
         dot.backgroundColor = .systemBlue
-        dot.layer.cornerRadius = 8
-        dot.layer.borderWidth = 2.5
+        dot.layer.cornerRadius = dotSize / 2
+        dot.layer.borderWidth = 6
         dot.layer.borderColor = UIColor.white.cgColor
         dot.layer.shadowColor = UIColor.black.cgColor
-        dot.layer.shadowOffset = CGSize(width: 0, height: 1)
-        dot.layer.shadowRadius = 3
+        dot.layer.shadowOffset = CGSize(width: 0, height: 2)
+        dot.layer.shadowRadius = 6
         dot.layer.shadowOpacity = 0.3
         dotContainer.addSubview(dot)
 
-        dotContainer.frame = CGRect(x: 0, y: 0, width: 16, height: 16)
+        dotContainer.frame = CGRect(x: 0, y: 0, width: dotSize, height: dotSize)
         dotContainer.isHidden = true
         imageView.addSubview(dotContainer)
         imageView.isUserInteractionEnabled = true
@@ -69,8 +72,27 @@ struct ZoomableMapView: UIViewRepresentable {
         context.coordinator.locationDot = dotContainer
         context.coordinator.pulseDot = pulse
 
-        // Render the PDF
-        renderPDF(into: imageView, coordinator: context.coordinator)
+        // Calibration tap gesture
+        if calibrationMode {
+            let tap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleCalibrationTap(_:)))
+            scrollView.addGestureRecognizer(tap)
+        }
+
+        // Load the bundled map image
+        if let image = UIImage(named: "subway-map") {
+            let size = image.size
+            imageView.image = image
+            imageView.frame = CGRect(origin: .zero, size: size)
+            context.coordinator.imageSize = size
+            scrollView.contentSize = size
+
+            // Defer zoom setup until the scroll view has been laid out by SwiftUI
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                self.configureZoom(for: scrollView, imageSize: size, coordinator: context.coordinator)
+            }
+        } else {
+            context.coordinator.mapMissing = true
+        }
 
         return scrollView
     }
@@ -97,72 +119,28 @@ struct ZoomableMapView: UIViewRepresentable {
 
         // Update location dot position
         updateLocationDot(coordinator: coordinator)
-    }
 
-    // MARK: - PDF Rendering
+        // Zoom to user's location the first time it becomes available
+        if !coordinator.hasZoomedToLocation,
+           coordinator.hasSetInitialZoom,
+           let location = userLocation,
+           let imageSize = coordinator.imageSize,
+           let point = CoordinateMapper.mapToImage(coordinate: location.coordinate, imageSize: imageSize) {
+            coordinator.hasZoomedToLocation = true
 
-    private func renderPDF(into imageView: UIImageView, coordinator: Coordinator) {
-        print("🚀 renderPDF called")
-        guard let url = Bundle.main.url(forResource: "subway-map", withExtension: "pdf") else {
-            print("❌ PDF URL not found")
-            coordinator.pdfMissing = true
-            return
-        }
-        print("✅ PDF URL: \(url)")
+            // Zoom to ~5× around the user's location
+            let zoomScale = scrollView.minimumZoomScale * 5.0
+            let visibleWidth = scrollView.bounds.width / zoomScale
+            let visibleHeight = scrollView.bounds.height / zoomScale
+            let zoomRect = CGRect(
+                x: point.x - visibleWidth / 2,
+                y: point.y - visibleHeight / 2,
+                width: visibleWidth,
+                height: visibleHeight
+            )
 
-        guard let document = CGPDFDocument(url as CFURL) else {
-            print("❌ CGPDFDocument failed to open")
-            coordinator.pdfMissing = true
-            return
-        }
-        print("✅ PDF document pages: \(document.numberOfPages)")
-
-        guard let page = document.page(at: 1) else {
-            print("❌ Could not get page 1")
-            coordinator.pdfMissing = true
-            return
-        }
-        print("✅ Got PDF page 1")
-
-        let pageRect = page.getBoxRect(.mediaBox)
-        let imageWidth = pageRect.width * renderScale
-        let imageHeight = pageRect.height * renderScale
-        let size = CGSize(width: imageWidth, height: imageHeight)
-        print("📐 PDF page rect: \(pageRect)")
-        print("📐 Render size: \(size)")
-
-        // Render on background thread
-        DispatchQueue.global(qos: .userInitiated).async {
-            let format = UIGraphicsImageRendererFormat()
-            format.scale = 1.0
-            let renderer = UIGraphicsImageRenderer(size: size, format: format)
-            let image = renderer.image { ctx in
-                let cgContext = ctx.cgContext
-                // White background
-                cgContext.setFillColor(UIColor.white.cgColor)
-                cgContext.fill(CGRect(origin: .zero, size: size))
-                // PDF renders with origin at bottom-left; flip for UIKit
-                cgContext.translateBy(x: 0, y: size.height)
-                cgContext.scaleBy(x: renderScale, y: -renderScale)
-                cgContext.drawPDFPage(page)
-            }
-
-            DispatchQueue.main.async {
-                print("🖼️ Image rendered: \(image.size), scale: \(image.scale)")
-                imageView.image = image
-                imageView.frame = CGRect(origin: .zero, size: size)
-                coordinator.imageSize = size
-
-                if let scrollView = imageView.superview as? UIScrollView {
-                    print("📦 ScrollView bounds: \(scrollView.bounds)")
-                    scrollView.contentSize = size
-                    coordinator.hasSetInitialZoom = false
-
-                    // Defer zoom setup to ensure SwiftUI has laid out the scroll view
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                        self.configureZoom(for: scrollView, imageSize: size, coordinator: coordinator)
-                    }
-                }
+            UIView.animate(withDuration: 0.8, delay: 0, options: .curveEaseInOut) {
+                scrollView.zoom(to: zoomRect, animated: false)
             }
         }
     }
@@ -171,9 +149,7 @@ struct ZoomableMapView: UIViewRepresentable {
 
     private func configureZoom(for scrollView: UIScrollView, imageSize: CGSize, coordinator: Coordinator) {
         let viewSize = scrollView.bounds.size
-        print("🔍 configureZoom — viewSize: \(viewSize), imageSize: \(imageSize)")
         guard viewSize.width > 0, viewSize.height > 0 else {
-            // Still not laid out — try again shortly
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 self.configureZoom(for: scrollView, imageSize: imageSize, coordinator: coordinator)
             }
@@ -202,6 +178,7 @@ struct ZoomableMapView: UIViewRepresentable {
             coordinate: location.coordinate,
             imageSize: imageSize
         ) {
+            print("📍 Location dot → pixel: \(point), imageSize: \(imageSize)")
             dot.center = point
             dot.isHidden = false
 
@@ -234,8 +211,9 @@ struct ZoomableMapView: UIViewRepresentable {
         var pulseDot: UIView?
         var imageSize: CGSize?
         var hasSetInitialZoom = false
+        var hasZoomedToLocation = false
         var isAnimatingPulse = false
-        var pdfMissing = false
+        var mapMissing = false
 
         func viewForZooming(in scrollView: UIScrollView) -> UIView? {
             imageView
@@ -250,6 +228,34 @@ struct ZoomableMapView: UIViewRepresentable {
             let yOffset = max(0, (boundsSize.height - contentSize.height) / 2)
 
             imageView.frame.origin = CGPoint(x: xOffset, y: yOffset)
+        }
+
+        @objc func handleCalibrationTap(_ gesture: UITapGestureRecognizer) {
+            guard let imageView = imageView, let imageSize = imageSize else { return }
+            let tapInImage = gesture.location(in: imageView)
+
+            let normalizedX = tapInImage.x / imageSize.width
+            let normalizedY = tapInImage.y / imageSize.height
+
+            // Log in copy-pasteable format
+            print("📌 TAP — normalizedX: \(String(format: "%.3f", normalizedX)), normalizedY: \(String(format: "%.3f", normalizedY))  (pixel: \(Int(tapInImage.x)), \(Int(tapInImage.y)))")
+
+            // Drop a crosshair marker at the tap point
+            let marker = UIView(frame: CGRect(x: 0, y: 0, width: 30, height: 30))
+            marker.center = tapInImage
+            marker.backgroundColor = UIColor.systemRed.withAlphaComponent(0.5)
+            marker.layer.cornerRadius = 15
+            marker.layer.borderWidth = 2
+            marker.layer.borderColor = UIColor.white.cgColor
+            marker.isUserInteractionEnabled = false
+            imageView.addSubview(marker)
+
+            // Fade out after 3 seconds
+            UIView.animate(withDuration: 1.0, delay: 3.0, options: []) {
+                marker.alpha = 0
+            } completion: { _ in
+                marker.removeFromSuperview()
+            }
         }
 
         func startPulseAnimation() {

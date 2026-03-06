@@ -5,50 +5,39 @@ struct ContentView: View {
     @StateObject private var locationManager = LocationManager()
     @State private var showLocationBanner = true
 
+    /// Set to true to enable calibration mode: tap stations to log normalized coordinates.
+    private let calibrationMode = true
+
     var body: some View {
-        ZStack {
-            // Full-screen zoomable map
-            ZoomableMapView(userLocation: locationManager.location)
-                .ignoresSafeArea()
+        ZoomableMapView(userLocation: locationManager.location, calibrationMode: calibrationMode)
+            .ignoresSafeArea()
+            .overlay(alignment: .bottom) {
+                VStack(spacing: 8) {
+                    // Location permission prompt
+                    if locationManager.authorizationStatus == .notDetermined {
+                        locationPrompt
+                    }
 
-            // Floating location banner at bottom
-            if showLocationBanner, let location = locationManager.location {
-                VStack {
-                    Spacer()
-                    locationBanner(for: location.coordinate)
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 8)
+                    // Floating location banner
+                    if showLocationBanner, let location = locationManager.location {
+                        locationBanner(for: location.coordinate)
+                    }
                 }
-                .transition(.move(edge: .bottom))
+                .padding(.horizontal, 16)
+                .padding(.bottom, 8)
             }
-
-            // Location permission prompt (only shown when not yet determined)
-            if locationManager.authorizationStatus == .notDetermined {
-                VStack {
-                    Spacer()
-                    locationPrompt
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 8)
+            .overlay {
+                if isMapMissing {
+                    pdfMissingOverlay
                 }
             }
-
-            // PDF missing overlay
-            if isPDFMissing {
-                pdfMissingOverlay
+            .onAppear {
+                if locationManager.authorizationStatus == .authorizedWhenInUse ||
+                   locationManager.authorizationStatus == .authorizedAlways {
+                    locationManager.startUpdating()
+                }
             }
-        }
-        .onAppear {
-            if let url = Bundle.main.url(forResource: "subway-map", withExtension: "pdf") {
-                print("✅ PDF found at: \(url)")
-            } else {
-                print("❌ PDF not found in bundle")
-            }
-            if locationManager.authorizationStatus == .authorizedWhenInUse ||
-               locationManager.authorizationStatus == .authorizedAlways {
-                locationManager.startUpdating()
-            }
-        }
-        .animation(.easeInOut(duration: 0.3), value: showLocationBanner)
+            .animation(.easeInOut(duration: 0.3), value: showLocationBanner)
     }
 
     // MARK: - Location Banner
@@ -57,7 +46,6 @@ struct ContentView: View {
         let nearest = CoordinateMapper.nearestStation(to: coordinate)
 
         return HStack(spacing: 10) {
-            // Pulsing dot indicator
             Circle()
                 .fill(Color.blue)
                 .frame(width: 10, height: 10)
@@ -126,8 +114,8 @@ struct ContentView: View {
 
     // MARK: - PDF Missing
 
-    private var isPDFMissing: Bool {
-        Bundle.main.url(forResource: "subway-map", withExtension: "pdf") == nil
+    private var isMapMissing: Bool {
+        UIImage(named: "subway-map") == nil
     }
 
     private var pdfMissingOverlay: some View {
@@ -139,7 +127,7 @@ struct ContentView: View {
             Text("Subway Map Not Found")
                 .font(.title2.weight(.semibold))
 
-            Text("Add **subway-map.pdf** to the Xcode project.\n\nDownload the official MTA map from:\nnew.mta.info/map/5256")
+            Text("Add **subway-map.png** to the Xcode asset catalog.")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
