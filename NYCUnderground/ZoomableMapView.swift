@@ -162,6 +162,24 @@ struct ZoomableMapView: UIViewRepresentable {
         scrollView.zoomScale = fitScale
         coordinator.hasSetInitialZoom = true
         centerContent(in: scrollView, coordinator: coordinator)
+
+        // If location is already available (returning user), zoom to it immediately
+        if !coordinator.hasZoomedToLocation,
+           let location = userLocation,
+           let point = CoordinateMapper.mapToImage(coordinate: location.coordinate, imageSize: imageSize) {
+            coordinator.hasZoomedToLocation = true
+
+            let zoomScale = fitScale * 5.0
+            let visibleWidth = scrollView.bounds.width / zoomScale
+            let visibleHeight = scrollView.bounds.height / zoomScale
+            let zoomRect = CGRect(
+                x: point.x - visibleWidth / 2,
+                y: point.y - visibleHeight / 2,
+                width: visibleWidth,
+                height: visibleHeight
+            )
+            scrollView.zoom(to: zoomRect, animated: false)
+        }
     }
 
     // MARK: - Location Dot
