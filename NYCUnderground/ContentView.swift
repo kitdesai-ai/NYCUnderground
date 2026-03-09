@@ -3,47 +3,205 @@ import CoreLocation
 
 struct ContentView: View {
     @StateObject private var locationManager = LocationManager()
+    @StateObject private var feedManager = SubwayFeedManager()
     @State private var showLocationBanner = true
+    @State private var showNearbySheet = false
+    @State private var selectedStation: Station? = nil
+    @State private var tappedStations: [Station] = []
+    @State private var nearbyStations: [Station] = []
+
+    // Calibration state
+    @State private var calibrationTapPoint: CGPoint? = nil
+    @State private var calibrationCandidates: [Station] = []
 
     /// Set to true to enable calibration mode: tap stations to log normalized coordinates.
-    private let calibrationMode = true
+    private let calibrationMode = false
 
     var body: some View {
-        ZoomableMapView(userLocation: locationManager.location, calibrationMode: calibrationMode)
-            .ignoresSafeArea()
-            .overlay(alignment: .bottom) {
-                VStack(spacing: 8) {
-                    // Location permission prompt
-                    if locationManager.authorizationStatus == .notDetermined {
-                        locationPrompt
-                    }
+        ZoomableMapView(
+            userLocation: locationManager.location,
+            calibrationMode: calibrationMode,
+            onStationsTapped: { stations in
+                if stations.count == 1 {
+                    selectedStation = stations[0]
+                } else {
+                    tappedStations = stations
+                    feedManager.startPolling(forStations: stations)
+                }
+            },
+            onCalibrationTap: { point in
+                calibrationTapPoint = point
+                // Use reverse mapping to suggest candidate stations
+                if let approxCoord = CoordinateMapper.imageToCoordinate(
+                    normalizedX: Double(point.x),
+                    normalizedY: Double(point.y)
+                ) {
+                    calibrationCandidates = StationDatabase.nearestStations(
+                        to: approxCoord, count: 10
+                    )
+                }
+            }
+        )
+        .ignoresSafeArea()
+        .overlay(alignment: .bottom) {
+            VStack(spacing: 8) {
+                // Location permission prompt
+                if locationManager.authorizationStatus == .notDetermined {
+                    locationPrompt
+                }
 
-                    // Floating location banner
-                    if showLocationBanner, let location = locationManager.location {
-                        locationBanner(for: location.coordinate)
+                // Floating location banner
+                if showLocationBanner, let location = locationManager.location {
+                    locationBanner(for: location.coordinate)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 8)
+        }
+        .overlay {
+            if isMapMissing {
+                pdfMissingOverlay
+            }
+        }
+        .onAppear {
+            if locationManager.authorizationStatus == .authorizedWhenInUse ||
+               locationManager.authorizationStatus == .authorizedAlways {
+                locationManager.startUpdating()
+            }
+        }
+        .onChange(of: locationManager.location) {
+            updateNearbyStations()
+        }
+        .animation(.easeInOut(duration: 0.3), value: showLocationBanner)
+        .sheet(isPresented: $showNearbySheet) {
+            NearbyStationsSheet(
+                stations: nearbyStations,
+                arrivalsByStation: feedManager.arrivalsByStation,
+                isLoading: feedManager.isLoading,
+                error: feedManager.lastError,
+                onStationTap: { station in
+                    showNearbySheet = false
+                    selectedStation = station
+                }
+            )
+            .presentationDetents([.medium, .large])
+        }
+        .sheet(item: $selectedStation) { station in
+            NavigationStack {
+                StationArrivalsView(
+                    station: station,
+                    arrivals: feedManager.arrivalsByStation[station.id] ?? []
+                )
+                .padding()
+                .navigationTitle(station.name)
+                .navigationBarTitleDisplayMode(.inline)
+            }
+            .presentationDetents([.height(300), .medium])
+            .onAppear {
+                feedManager.startPolling(forStations: [station])
+            }
+        }
+        .sheet(isPresented: Binding(
+            get: { !tappedStations.isEmpty },
+            set: { if !$0 { tappedStations = [] } }
+        )) {
+            NavigationStack {
+                List(tappedStations) { station in
+                    StationArrivalsView(
+                        station: station,
+                        arrivals: feedManager.arrivalsByStation[station.id] ?? []
+                    )
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        tappedStations = []
+                        selectedStation = station
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 8)
+                .listStyle(.plain)
+                .navigationTitle("Select Station")
+                .navigationBarTitleDisplayMode(.inline)
             }
-            .overlay {
-                if isMapMissing {
-                    pdfMissingOverlay
+            .presentationDetents([.medium])
+        }
+        .sheet(isPresented: Binding(
+            get: { calibrationTapPoint != nil },
+            set: { if !$0 { calibrationTapPoint = nil; calibrationCandidates = [] } }
+        )) {
+            calibrationSheet
+        }
+    }
+
+    // MARK: - Calibration Sheet
+
+    private var calibrationSheet: some View {
+        NavigationStack {
+            List(calibrationCandidates) { station in
+                Button {
+                    if let point = calibrationTapPoint {
+                        let line = "\(station.name)\t\(station.latitude)\t\(station.longitude)\t\(String(format: "%.3f", point.x))\t\(String(format: "%.3f", point.y))\n"
+                        print("✅ \(station.name): (\(String(format: "%.3f", point.x)), \(String(format: "%.3f", point.y)))")
+
+                        // Append to calibration file
+                        let fileURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+                            .appendingPathComponent("calibration.tsv")
+                        if let data = line.data(using: .utf8) {
+                            if FileManager.default.fileExists(atPath: fileURL.path) {
+                                if let handle = try? FileHandle(forWritingTo: fileURL) {
+                                    handle.seekToEndOfFile()
+                                    handle.write(data)
+                                    handle.closeFile()
+                                }
+                            } else {
+                                try? data.write(to: fileURL)
+                            }
+                        }
+                        print("📁 Saved to: \(fileURL.path)")
+                    }
+                    calibrationTapPoint = nil
+                    calibrationCandidates = []
+                } label: {
+                    HStack(spacing: 8) {
+                        Text(station.name)
+                            .font(.body)
+                            .foregroundColor(.primary)
+                        Spacer()
+                        ForEach(station.routes, id: \.self) { route in
+                            RoutePill(route: route, size: 20)
+                        }
+                    }
+                    .padding(.vertical, 4)
                 }
             }
-            .onAppear {
-                if locationManager.authorizationStatus == .authorizedWhenInUse ||
-                   locationManager.authorizationStatus == .authorizedAlways {
-                    locationManager.startUpdating()
+            .listStyle(.plain)
+            .navigationTitle("Which station?")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Skip") {
+                        calibrationTapPoint = nil
+                        calibrationCandidates = []
+                    }
                 }
             }
-            .animation(.easeInOut(duration: 0.3), value: showLocationBanner)
+        }
+        .presentationDetents([.medium])
+    }
+
+    // MARK: - Nearby Stations
+
+    private func updateNearbyStations() {
+        guard let location = locationManager.location else { return }
+        let stations = StationDatabase.nearestStations(to: location.coordinate, count: 5)
+        nearbyStations = stations
+        if !stations.isEmpty {
+            feedManager.startPolling(forStations: stations)
+        }
     }
 
     // MARK: - Location Banner
 
     private func locationBanner(for coordinate: CLLocationCoordinate2D) -> some View {
-        let nearest = CoordinateMapper.nearestStation(to: coordinate)
+        let nearest = StationDatabase.nearestStations(to: coordinate, count: 1).first
 
         return HStack(spacing: 10) {
             Circle()
@@ -60,7 +218,7 @@ struct ContentView: View {
                     Text("Near \(station.name)")
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(.primary)
-                    Text(formatDistance(station.distanceMeters))
+                    Text(formatDistance(to: station, from: coordinate))
                         .font(.system(size: 12))
                         .foregroundColor(.secondary)
                 }
@@ -72,10 +230,11 @@ struct ContentView: View {
 
             Spacer()
 
+            // Tap banner area to show nearby sheet
             Button {
-                withAnimation { showLocationBanner = false }
+                showNearbySheet = true
             } label: {
-                Image(systemName: "xmark")
+                Image(systemName: "chevron.right")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundColor(.secondary)
                     .frame(width: 24, height: 24)
@@ -85,6 +244,9 @@ struct ContentView: View {
         .padding(.vertical, 10)
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
         .shadow(color: .black.opacity(0.12), radius: 8, y: 4)
+        .onTapGesture {
+            showNearbySheet = true
+        }
     }
 
     // MARK: - Permission Prompt
@@ -139,8 +301,12 @@ struct ContentView: View {
 
     // MARK: - Helpers
 
-    private func formatDistance(_ meters: Double) -> String {
-        if meters < 160 { // ~0.1 miles
+    private func formatDistance(to station: Station, from coordinate: CLLocationCoordinate2D) -> String {
+        let stationLocation = CLLocation(latitude: station.latitude, longitude: station.longitude)
+        let userLocation = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
+        let meters = userLocation.distance(from: stationLocation)
+
+        if meters < 160 {
             return "Very close"
         } else {
             let miles = meters / 1609.34

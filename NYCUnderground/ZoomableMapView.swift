@@ -8,6 +8,8 @@ import CoreLocation
 struct ZoomableMapView: UIViewRepresentable {
     var userLocation: CLLocation?
     var calibrationMode: Bool = false
+    var onStationsTapped: (([Station]) -> Void)?
+    var onCalibrationTap: ((CGPoint) -> Void)?
 
     func makeCoordinator() -> Coordinator {
         Coordinator()
@@ -72,11 +74,12 @@ struct ZoomableMapView: UIViewRepresentable {
         context.coordinator.locationDot = dotContainer
         context.coordinator.pulseDot = pulse
 
-        // Calibration tap gesture
-        if calibrationMode {
-            let tap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleCalibrationTap(_:)))
-            scrollView.addGestureRecognizer(tap)
-        }
+        // Tap gesture — calibration mode or station detection
+        let tap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleTap(_:)))
+        scrollView.addGestureRecognizer(tap)
+        context.coordinator.calibrationMode = calibrationMode
+        context.coordinator.onStationsTapped = onStationsTapped
+        context.coordinator.onCalibrationTap = onCalibrationTap
 
         // Load the bundled map image
         if let image = UIImage(named: "subway-map") {
@@ -232,6 +235,9 @@ struct ZoomableMapView: UIViewRepresentable {
         var hasZoomedToLocation = false
         var isAnimatingPulse = false
         var mapMissing = false
+        var calibrationMode = false
+        var onStationsTapped: (([Station]) -> Void)?
+        var onCalibrationTap: ((CGPoint) -> Void)?
 
         func viewForZooming(in scrollView: UIScrollView) -> UIView? {
             imageView
@@ -248,31 +254,67 @@ struct ZoomableMapView: UIViewRepresentable {
             imageView.frame.origin = CGPoint(x: xOffset, y: yOffset)
         }
 
-        @objc func handleCalibrationTap(_ gesture: UITapGestureRecognizer) {
+        @objc func handleTap(_ gesture: UITapGestureRecognizer) {
             guard let imageView = imageView, let imageSize = imageSize else { return }
             let tapInImage = gesture.location(in: imageView)
 
             let normalizedX = tapInImage.x / imageSize.width
             let normalizedY = tapInImage.y / imageSize.height
 
-            // Log in copy-pasteable format
-            print("📌 TAP — normalizedX: \(String(format: "%.3f", normalizedX)), normalizedY: \(String(format: "%.3f", normalizedY))  (pixel: \(Int(tapInImage.x)), \(Int(tapInImage.y)))")
+            // Calibration mode: show station picker
+            if calibrationMode {
+                let tapPoint = CGPoint(x: normalizedX, y: normalizedY)
+                print("📌 TAP — normalizedX: \(String(format: "%.3f", normalizedX)), normalizedY: \(String(format: "%.3f", normalizedY))")
 
-            // Drop a crosshair marker at the tap point
-            let marker = UIView(frame: CGRect(x: 0, y: 0, width: 30, height: 30))
-            marker.center = tapInImage
-            marker.backgroundColor = UIColor.systemRed.withAlphaComponent(0.5)
-            marker.layer.cornerRadius = 15
-            marker.layer.borderWidth = 2
-            marker.layer.borderColor = UIColor.white.cgColor
-            marker.isUserInteractionEnabled = false
-            imageView.addSubview(marker)
+                // Visual marker
+                let marker = UIView(frame: CGRect(x: 0, y: 0, width: 30, height: 30))
+                marker.center = tapInImage
+                marker.backgroundColor = UIColor.systemRed.withAlphaComponent(0.5)
+                marker.layer.cornerRadius = 15
+                marker.layer.borderWidth = 2
+                marker.layer.borderColor = UIColor.white.cgColor
+                marker.isUserInteractionEnabled = false
+                imageView.addSubview(marker)
+                UIView.animate(withDuration: 1.0, delay: 3.0, options: []) {
+                    marker.alpha = 0
+                } completion: { _ in
+                    marker.removeFromSuperview()
+                }
 
-            // Fade out after 3 seconds
-            UIView.animate(withDuration: 1.0, delay: 3.0, options: []) {
-                marker.alpha = 0
-            } completion: { _ in
-                marker.removeFromSuperview()
+                onCalibrationTap?(tapPoint)
+                return
+            }
+
+            // Station detection: find nearest station(s) in visual space
+            let scrollView = imageView.superview as? UIScrollView
+            let zoomScale = scrollView?.zoomScale ?? 1.0
+            let minZoomScale = scrollView?.minimumZoomScale ?? 1.0
+
+            let tapNormalized = CGPoint(x: normalizedX, y: normalizedY)
+            let stations = StationDatabase.stations(
+                nearNormalizedPoint: tapNormalized,
+                imageSize: imageSize,
+                zoomScale: zoomScale,
+                minZoomScale: minZoomScale
+            )
+
+            if !stations.isEmpty {
+                // Visual feedback: brief highlight
+                let highlightSize: CGFloat = 60
+                let highlight = UIView(frame: CGRect(x: 0, y: 0, width: highlightSize, height: highlightSize))
+                highlight.center = tapInImage
+                highlight.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.3)
+                highlight.layer.cornerRadius = highlightSize / 2
+                highlight.isUserInteractionEnabled = false
+                imageView.addSubview(highlight)
+                UIView.animate(withDuration: 0.5, delay: 0.3, options: []) {
+                    highlight.alpha = 0
+                    highlight.transform = CGAffineTransform(scaleX: 1.5, y: 1.5)
+                } completion: { _ in
+                    highlight.removeFromSuperview()
+                }
+
+                onStationsTapped?(stations)
             }
         }
 
