@@ -285,36 +285,69 @@ struct ZoomableMapView: UIViewRepresentable {
                 return
             }
 
-            // Station detection: find nearest station(s) in visual space
+            // Station detection: try OCR first, fall back to distance-based matching
             let scrollView = imageView.superview as? UIScrollView
             let zoomScale = scrollView?.zoomScale ?? 1.0
             let minZoomScale = scrollView?.minimumZoomScale ?? 1.0
 
-            let tapNormalized = CGPoint(x: normalizedX, y: normalizedY)
-            let stations = StationDatabase.stations(
-                nearNormalizedPoint: tapNormalized,
-                imageSize: imageSize,
-                zoomScale: zoomScale,
-                minZoomScale: minZoomScale
-            )
+            // Visual feedback: immediate highlight to acknowledge the tap
+            let highlightSize: CGFloat = 60
+            let highlight = UIView(frame: CGRect(x: 0, y: 0, width: highlightSize, height: highlightSize))
+            highlight.center = tapInImage
+            highlight.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.3)
+            highlight.layer.cornerRadius = highlightSize / 2
+            highlight.isUserInteractionEnabled = false
+            imageView.addSubview(highlight)
 
-            if !stations.isEmpty {
-                // Visual feedback: brief highlight
-                let highlightSize: CGFloat = 60
-                let highlight = UIView(frame: CGRect(x: 0, y: 0, width: highlightSize, height: highlightSize))
-                highlight.center = tapInImage
-                highlight.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.3)
-                highlight.layer.cornerRadius = highlightSize / 2
-                highlight.isUserInteractionEnabled = false
-                imageView.addSubview(highlight)
-                UIView.animate(withDuration: 0.5, delay: 0.3, options: []) {
+            let tapNormalized = CGPoint(x: normalizedX, y: normalizedY)
+            let capturedImage = imageView.image
+            let capturedTapInImage = tapInImage
+            let capturedImageSize = imageSize
+            let capturedOnStationsTapped = onStationsTapped
+
+            Task { @MainActor in
+                var stations: [Station] = []
+
+                // Try OCR-based detection
+                if let image = capturedImage {
+                    // Adapt crop radius to zoom level: larger crop when zoomed out
+                    let effectiveZoom = zoomScale / minZoomScale
+                    let cropRadius: CGFloat = max(100, 300 / effectiveZoom)
+                    stations = await StationOCR.recognizeStations(
+                        in: image,
+                        nearPoint: capturedTapInImage,
+                        imageSize: capturedImageSize,
+                        cropRadius: cropRadius
+                    )
+                    if !stations.isEmpty {
+                        print("✅ OCR found \(stations.count) station(s)")
+                    }
+                }
+
+                // Fall back to distance-based matching
+                if stations.isEmpty {
+                    stations = StationDatabase.stations(
+                        nearNormalizedPoint: tapNormalized,
+                        imageSize: capturedImageSize,
+                        zoomScale: zoomScale,
+                        minZoomScale: minZoomScale
+                    )
+                    if !stations.isEmpty {
+                        print("📍 Fallback distance match: \(stations.map(\.name).joined(separator: ", "))")
+                    }
+                }
+
+                // Animate highlight out
+                UIView.animate(withDuration: 0.4, delay: 0.1, options: []) {
                     highlight.alpha = 0
                     highlight.transform = CGAffineTransform(scaleX: 1.5, y: 1.5)
                 } completion: { _ in
                     highlight.removeFromSuperview()
                 }
 
-                onStationsTapped?(stations)
+                if !stations.isEmpty {
+                    capturedOnStationsTapped?(stations)
+                }
             }
         }
 

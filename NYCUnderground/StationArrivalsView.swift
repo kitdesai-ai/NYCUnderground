@@ -28,7 +28,9 @@ struct StationArrivalsView: View {
                         .prefix(4)
 
                     if !dirArrivals.isEmpty {
-                        directionRow(direction: direction, arrivals: Array(dirArrivals))
+                        let firstArrival = dirArrivals.first!
+                        let label = station.directionLabel(forStopId: firstArrival.stopId, direction: direction)
+                        directionRow(label: label, arrivals: Array(dirArrivals))
                     }
                 }
             }
@@ -36,9 +38,9 @@ struct StationArrivalsView: View {
         .padding(.vertical, 4)
     }
 
-    private func directionRow(direction: Arrival.Direction, arrivals: [Arrival]) -> some View {
+    private func directionRow(label: String, arrivals: [Arrival]) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(direction.label)
+            Text(label)
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .textCase(.uppercase)

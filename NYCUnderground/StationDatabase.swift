@@ -52,6 +52,11 @@ struct StationDatabase {
         return Array(sorted.prefix(count).map(\.0))
     }
 
+    /// Get the normalized visual position for a station on the map.
+    static func visualPosition(for station: Station) -> CGPoint? {
+        stationVisualPositions[station.id]
+    }
+
     /// Pre-computed normalized visual positions for each station on the map.
     /// Uses forward mapping (GPS → pixel via CoordinateMapper).
     /// Keyed by station id.

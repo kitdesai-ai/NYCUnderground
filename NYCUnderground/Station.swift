@@ -8,6 +8,15 @@ struct Station: Identifiable, Codable, Hashable {
     let longitude: Double
     let routes: [String]        // e.g. ["A", "C", "F", "N", "R", "W"]
 
+    /// Per-stop direction labels from MTA Stations.csv, keyed by GTFS stop_id.
+    /// e.g. {"A41": {"north": "Manhattan", "south": "Euclid - Lefferts..."}}
+    let directionLabels: [String: DirectionLabel]?
+
+    struct DirectionLabel: Codable, Hashable {
+        let north: String
+        let south: String
+    }
+
     /// All stop_ids (primary + alternates) with N/S suffixes for GTFS-RT matching.
     var allDirectionalStopIds: Set<String> {
         var ids = Set<String>()
@@ -16,6 +25,21 @@ struct Station: Identifiable, Codable, Hashable {
             ids.insert(baseId + "S")
         }
         return ids
+    }
+
+    /// Get the direction label for a given stop_id and direction.
+    /// Falls back to generic "Uptown"/"Downtown" if not available.
+    func directionLabel(forStopId stopId: String, direction: Arrival.Direction) -> String {
+        let baseId = stopId.hasSuffix("N") || stopId.hasSuffix("S")
+            ? String(stopId.dropLast()) : stopId
+        if let label = directionLabels?[baseId] {
+            return direction == .uptown ? label.north : label.south
+        }
+        // Try primary stop's label as fallback
+        if let label = directionLabels?[id] {
+            return direction == .uptown ? label.north : label.south
+        }
+        return direction == .uptown ? "Uptown" : "Downtown"
     }
 
     func hash(into hasher: inout Hasher) {

@@ -1,29 +1,42 @@
 # NYC Underground — Project Brief
 
 ## What This Is
-An offline NYC subway map iOS app. Phase 1 is a high-res zoomable MTA map with current location overlay. Phase 2 will add real-time train arrival times.
+A NYC subway map iOS app with real-time train arrivals. Bundles the official MTA map with GPS overlay, station tap detection (OCR + distance-based), and live GTFS-RT arrival times.
 
-## Current State: Phase 1 — Working
-The app bundles the official MTA subway map PDF, renders it at 4× resolution as a bitmap, and displays it in a UIScrollView with pinch-to-zoom. A blue dot shows the user's approximate location on the schematic map. A floating banner shows the nearest reference station by GPS distance.
+## Current State: Phase 2 — Working
+Zoomable MTA map with location dot, tap any station to see real-time arrivals, tap the location banner for nearby stations sheet. Station data sourced from MTA's Stations.csv with proper complex groupings and per-station direction labels.
 
 ## Tech Stack
 - Swift / SwiftUI (targeting Swift 6.2 / Xcode 26)
 - UIKit `UIScrollView` bridged via `UIViewRepresentable` for map zoom/pan
 - `CoreLocation` for GPS
-- `CoreGraphics` for PDF rendering
-- No dependencies, no packages, no network calls
+- `Vision` framework for OCR-based station detection on tap
+- `SwiftProtobuf` for GTFS-RT feed parsing
+- Network calls to MTA GTFS-RT endpoints (no API key required)
 
 ## File Structure
 ```
 NYCUnderground/
   NYCUndergroundApp.swift          — App entry point, forces light mode
-  Views/
-    ContentView.swift              — Root view: map + location banner + permission prompt
-    ZoomableMapView.swift          — UIViewRepresentable wrapping UIScrollView + PDF render
-  Services/
-    LocationManager.swift          — CLLocationManager wrapper (Swift 6.2 ObservableObject pattern)
-    CoordinateMapper.swift         — GPS-to-pixel mapping via inverse distance weighting
-  subway-map.pdf                   — Bundled MTA map (not in repo, downloaded from MTA site)
+  ContentView.swift                — Root view: map + banners + sheets for arrivals
+  ZoomableMapView.swift            — UIViewRepresentable: scroll/zoom + tap handling
+  LocationManager.swift            — CLLocationManager wrapper (Swift 6.2 pattern)
+  CoordinateMapper.swift           — GPS-to-pixel mapping via inverse distance weighting (~120 ref points)
+  StationDatabase.swift            — Loads stops_subway.json, lookup by ID/GPS/visual position
+  StationOCR.swift                 — Vision OCR: crop map near tap, fuzzy-match text to station names
+  Station.swift                    — Station model with directionLabels per platform
+  Arrival.swift                    — Arrival model (route, direction, time)
+  SubwayFeedManager.swift          — Polls MTA GTFS-RT feeds every 30s
+  GTFSRealtimeParser.swift         — Protobuf → Arrival parsing
+  StationArrivalsView.swift        — Arrivals grouped by direction with route pills
+  NearbyStationsSheet.swift        — Nearby stations list with arrivals
+  RoutePill.swift                  — Colored route indicator (matches MTA colors)
+  stops_subway.json                — 445 stations from MTA Stations.csv + GTFS (Complex ID groupings)
+  Proto/
+    gtfs-realtime.proto            — GTFS-RT protobuf schema
+    gtfs-realtime.pb.swift         — Generated Swift protobuf code (nonisolated for Swift 6.2)
+  Assets.xcassets/
+    subway-map.imageset/           — Pre-rendered MTA map PNG (6766×8060px)
 ```
 
 ## Key Architecture Decisions
@@ -40,26 +53,49 @@ The MTA map is NOT geographically accurate — it's a schematic with distorted d
 ### Swift 6.2 Compatibility
 `LocationManager` uses the explicit `objectWillChange` pattern: `nonisolated let objectWillChange = ObservableObjectPublisher()` with `willSet { objectWillChange.send() }` instead of `@Published`. Delegate callbacks dispatch to MainActor via `Task { @MainActor in }`.
 
+## Key Architecture Decisions (continued)
+
+### Station Tap Detection
+Two-layer approach: OCR primary, distance fallback.
+1. **OCR** (`StationOCR.swift`): Crops region around tap from map image, runs `VNRecognizeTextRequest`, fuzzy-matches recognized text against station names. Filters out route label circles (single letters/numbers like "2", "A"). Adapts crop radius to zoom level.
+2. **Distance-based** (`StationDatabase.stations(nearNormalizedPoint:...)`): Pre-computes visual positions via `CoordinateMapper.mapToImage()` forward mapping. Falls back here if OCR finds nothing.
+
+### Station Data
+`stops_subway.json` is generated from two MTA sources:
+- **MTA Stations.csv** (`http://web.mta.info/developers/data/nyct/subway/Stations.csv`): Complex ID for proper station groupings, direction labels (north/south) per platform
+- **GTFS static** (`http://web.mta.info/developers/data/nyct/subway/google_transit.zip`): `stop_times.txt` for actual routes per stop, `stops.txt` for coordinates
+- Station complexes are defined by MTA Complex ID (NOT by name matching — many stations share names across boroughs)
+- Direction labels are per-platform from MTA data (e.g., Jay St R: "Manhattan" / "Bay Ridge - 95 St")
+
+### GTFS-RT Feed Polling
+`SubwayFeedManager` polls 8 MTA feed endpoints (one per line group) every 30 seconds. Each feed returns protobuf with `TripUpdate` entities containing `StopTimeUpdate` with arrival times. The `GTFSRealtimeParser` extracts arrivals matching requested station stop_ids.
+
 ## Known Issues / TODOs
-- **Location dot calibration**: The reference point pixel coordinates in `CoordinateMapper` are estimates. They need to be calibrated by tapping known stations on the rendered map and recording actual pixel positions. The README describes the calibration process.
-- **No loading indicator**: The PDF renders on a background thread; there's a brief white screen on cold launch before the image appears.
-- **Memory**: The 6624×8064 bitmap is ~200MB uncompressed in memory. Fine on modern iPhones but worth watching. Could tile the PDF instead if this becomes an issue.
-- **Light mode only**: App forces `.preferredColorScheme(.light)` since the MTA map is white-background. A dark/inverted mode could be a nice-to-have.
+- **OCR latency**: Vision OCR adds ~200-500ms to tap response. Could pre-index text positions on app launch.
+- **No loading indicator**: Brief white screen on cold launch before the map image appears.
+- **Memory**: The 6766×8060 bitmap is ~200MB uncompressed. Fine on modern iPhones but could tile if needed.
+- **Light mode only**: App forces `.preferredColorScheme(.light)` since the MTA map has a white background.
+- **Calibration mode**: `calibrationMode = false` in ContentView. Set to `true` to tap stations and log normalized coordinates to `calibration.tsv` in Documents.
 
-## Phase 2 Plan — Train Arrival Times
-The goal is to show real-time train arrival times, either by tapping a station on the map or via a nearby-stations list.
+## Phase 3 — Potential Features
 
-### Data Sources to Research
-- **MTA GTFS-RT feeds**: Real-time transit data via protocol buffers. Free API key from `api.mta.info`. Provides trip updates, vehicle positions, and service alerts.
-- **Station data**: GTFS static feeds have `stops.txt` with all station coordinates and IDs, which we'd need to map stations on the schematic to their GTFS stop IDs.
-- **Existing app reference**: NYC Subway Widget (`https://apps.apple.com/us/app/nyc-subway-widget/id6737175908`) shows nearby station times — this is the UX target.
+### MTA Data Sources Available
+| Dataset | URL | Potential Use |
+|---------|-----|---------------|
+| Service Alerts | `https://data.ny.gov/d/7kct-peq7` | Show disruptions/planned work on affected stations and routes |
+| Elevator & Escalator Availability | `https://data.ny.gov/d/rc78-7x78` | Real-time accessibility status per station |
+| Elevator/Escalator Inventory | `https://data.ny.gov/d/94fv-bak7` | Which stations have elevators, current status |
+| Station Entrances & Exits | `https://data.ny.gov/d/i9wp-a4ja` | GPS coords of every entrance with street corner info |
+| Hourly Ridership | `https://data.ny.gov/d/5wq4-mkjj` | "How crowded is this station?" indicator |
+| Supplemented GTFS | `https://rrgtfsfeeds.s3.amazonaws.com/gtfs_supplemented.zip` | Schedule with service changes for next 7 days, updated hourly |
+| Stations & Complexes | `https://data.ny.gov/d/5f5g-n3cz` | ADA accessibility details per complex |
 
-### Phase 2 Architecture (Rough)
-- Add a station database (GTFS stops.txt, bundled or fetched once)
-- Network layer to poll GTFS-RT feeds for arrival predictions
-- Tap-on-station interaction: overlay tap targets on the map at station positions, show a sheet/popover with upcoming trains
-- Nearby stations view: use GPS to find closest stations and show next arrivals
-- iOS widget showing nearest station times (WidgetKit)
+### Feature Ideas
+- **Service alerts**: Show weekend/planned work banners on station arrival sheets, route-level disruption indicators
+- **Elevator/escalator status**: Accessibility icon on stations, alert when elevator is out at a station you're heading to
+- **Station entrances**: "Navigate to nearest entrance" with walking directions
+- **iOS widget** (WidgetKit): Nearest station arrival times on home screen
+- **Dark mode**: Inverted/dark map variant
 
 ## Info.plist Keys (set via Xcode target > Info tab, NOT a standalone file)
 - `NSLocationWhenInUseUsageDescription`: "Shows your location on the subway map"

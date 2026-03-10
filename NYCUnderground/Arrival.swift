@@ -11,13 +11,6 @@ struct Arrival: Identifiable {
     enum Direction: String, CaseIterable {
         case uptown     // N suffix
         case downtown   // S suffix
-
-        var label: String {
-            switch self {
-            case .uptown: return "Uptown"
-            case .downtown: return "Downtown"
-            }
-        }
     }
 
     var minutesAway: Int {
