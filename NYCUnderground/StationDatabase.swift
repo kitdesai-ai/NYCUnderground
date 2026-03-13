@@ -57,19 +57,46 @@ struct StationDatabase {
         stationVisualPositions[station.id]
     }
 
-    /// Pre-computed normalized visual positions for each station on the map.
-    /// Uses forward mapping (GPS → pixel via CoordinateMapper).
-    /// Keyed by station id.
-    private static let stationVisualPositions: [String: CGPoint] = {
-        // Use a reference image size (cancels out since we normalize)
-        let refSize = CGSize(width: 1000, height: 1000)
+    /// Pre-indexed positions from offline OCR (station_positions.json).
+    /// Maps station id → normalized {x, y} position of the station name text on the map.
+    private static let ocrPositions: [String: CGPoint] = {
+        guard let url = Bundle.main.url(forResource: "station_positions", withExtension: "json"),
+              let data = try? Data(contentsOf: url),
+              let dict = try? JSONDecoder().decode([String: [String: Double]].self, from: data) else {
+            print("⚠️ station_positions.json not found, using GPS-only positions")
+            return [:]
+        }
         var positions = [String: CGPoint]()
-        for station in stations {
-            let coord = CLLocationCoordinate2D(latitude: station.latitude, longitude: station.longitude)
-            if let pixel = CoordinateMapper.mapToImage(coordinate: coord, imageSize: refSize) {
-                positions[station.id] = CGPoint(x: pixel.x / refSize.width, y: pixel.y / refSize.height)
+        for (id, coords) in dict {
+            if let x = coords["x"], let y = coords["y"] {
+                positions[id] = CGPoint(x: x, y: y)
             }
         }
+        print("📍 Loaded \(positions.count) OCR-indexed station positions")
+        return positions
+    }()
+
+    /// Pre-computed normalized visual positions for each station on the map.
+    /// Prefers OCR-derived positions (actual text locations on the schematic map),
+    /// falls back to GPS → pixel via CoordinateMapper for stations not found by OCR.
+    private static let stationVisualPositions: [String: CGPoint] = {
+        let refSize = CGSize(width: 1000, height: 1000)
+        var positions = [String: CGPoint]()
+        var ocrCount = 0
+        var gpsCount = 0
+        for station in stations {
+            if let ocrPos = ocrPositions[station.id] {
+                positions[station.id] = ocrPos
+                ocrCount += 1
+            } else {
+                let coord = CLLocationCoordinate2D(latitude: station.latitude, longitude: station.longitude)
+                if let pixel = CoordinateMapper.mapToImage(coordinate: coord, imageSize: refSize) {
+                    positions[station.id] = CGPoint(x: pixel.x / refSize.width, y: pixel.y / refSize.height)
+                    gpsCount += 1
+                }
+            }
+        }
+        print("📍 Station positions: \(ocrCount) from OCR, \(gpsCount) from GPS fallback")
         return positions
     }()
 
