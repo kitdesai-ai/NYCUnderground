@@ -12,7 +12,18 @@ A fast, native iOS subway map app with real-time MTA train arrivals for all 445 
 
 ## Screenshots
 
-<!-- TODO: Add screenshots -->
+App Store marketing slides (6.9", 1320×2868) live in [`AppStore/screenshots/`](AppStore/screenshots/).
+
+| Map | Arrivals | Nearby | Location | Hub |
+|-----|----------|--------|----------|-----|
+| ![Map](AppStore/screenshots/01-map.png) | ![Arrivals](AppStore/screenshots/02-arrivals.png) | ![Nearby](AppStore/screenshots/03-nearby.png) | ![Location](AppStore/screenshots/04-location.png) | ![Hub](AppStore/screenshots/05-hub.png) |
+
+## App Store Submission
+
+Everything needed to ship 1.0 to the App Store is in [`AppStore/`](AppStore/):
+metadata, App Privacy answers, a step-by-step submission checklist, and a
+screenshot generator. The public Privacy Policy and Support pages are in
+[`docs/`](docs/) and auto-deploy to GitHub Pages.
 
 ## Tech Stack
 
