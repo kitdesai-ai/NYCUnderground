@@ -357,24 +357,26 @@ ATLANTIC = lambda: screen_arrivals(
      ("CONEY ISLAND & BAY RIDGE", [("N", 2), ("Q", 7), ("R", 12)]),
      ("BRONX & QUEENS", [("D", 4), ("B", 9)])])
 
-# Per-slide accent = the MTA route-bullet color for that line group.
-MTA_BLUE   = ROUTE["A"]   # #003DA3  (A/C/E)
-MTA_RED    = ROUTE["1"]   # #ED3D45  (1/2/3)
-MTA_GREEN  = ROUTE["4"]   # #009440  (4/5/6)
-MTA_YELLOW = ROUTE["N"]   # #FCCF1A  (N/Q/R/W)
-MTA_ORANGE = ROUTE["B"]   # #FF6300  (B/D/F/M)
+# Per-slide accent = a brightened tint of each MTA line color, used only for the
+# headline + background glow so it pops against the dark gradient. The route
+# bullets inside the phone come from the real captures, so they stay exact MTA.
+ACC_BLUE   = "#3D9BFF"   # brightened MTA blue   (A/C/E #003DA3)
+ACC_RED    = "#FF5257"   # brightened MTA red    (1/2/3 #ED3D45)
+ACC_GREEN  = "#2ECC5E"   # brightened MTA green  (4/5/6 #009440)
+ACC_YELLOW = "#FFD63A"   # brightened MTA yellow (N/Q/R/W #FCCF1A)
+ACC_ORANGE = "#FF7D26"   # brightened MTA orange (B/D/F/M #FF6300)
 
 SLIDES = [
     ("01-map.png",      ["The whole subway,", "*in your pocket.*"],
-     "The official map, zoomable and bundled in.", screen_map,     MTA_BLUE),
+     "The official map, zoomable and bundled in.", screen_map,     ACC_BLUE),
     ("02-arrivals.png", ["Real-time arrivals,", "*one tap away.*"],
-     "Tap any station for live train times.",      TIMES_SQ,       MTA_RED),
+     "Tap any station for live train times.",      TIMES_SQ,       ACC_RED),
     ("03-nearby.png",   ["The closest trains,", "*right now.*"],
-     "Your nearest stations, ranked by distance.", screen_nearby,  MTA_GREEN),
+     "Your nearest stations, ranked by distance.", screen_nearby,  ACC_GREEN),
     ("04-location.png", ["Always know", "*where you are.*"],
-     "A live GPS dot, right on the map.",          screen_locating, MTA_YELLOW),
+     "A live GPS dot, right on the map.",          screen_locating, ACC_YELLOW),
     ("05-hub.png",      ["Every line,", "*every borough.*"],
-     "All 445 stations. Live MTA data at your fingertips.", ATLANTIC,     MTA_ORANGE),
+     "All 445 stations. Live MTA data at your fingertips.", ATLANTIC,     ACC_ORANGE),
 ]
 
 RAW = os.path.join(OUT, "raw")
