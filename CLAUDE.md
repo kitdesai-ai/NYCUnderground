@@ -101,3 +101,6 @@ Two-layer approach: OCR primary, distance fallback.
 
 ## Map Asset
 Download from `https://new.mta.info/map/5256`, rename to `subway-map.pdf`, add to target's bundle resources.
+
+## Preferences
+- Commit messages and PR text: do NOT include a `Co-Authored-By: Claude` line or a `Claude-Session:` URL (or any Claude/model identifier). Keep commits and PRs free of that footer.
