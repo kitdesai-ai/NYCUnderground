@@ -367,7 +367,7 @@ SLIDES = [
     ("04-location.png", ["Always know", "*where you are.*"],
      "A live GPS dot, right on the map.",          screen_locating, ACCENT),
     ("05-hub.png",      ["Every line,", "*every borough.*"],
-     "All 445 stations. Live MTA data, no API key.", ATLANTIC,     "#FF6300"),
+     "All 445 stations. Live MTA data at your fingertips.", ATLANTIC,     "#FF6300"),
 ]
 
 RAW = os.path.join(OUT, "raw")

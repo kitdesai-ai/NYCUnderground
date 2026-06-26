@@ -1,0 +1,9 @@
+# Dependencies for generate_screenshots.py
+# Install into a virtualenv:  pip install -r requirements.txt
+#
+# NOTE: cairosvg also needs the native Cairo C library, which pip does NOT
+# install. See "Generator setup" in screenshots.md.
+#   macOS:  brew install cairo
+#   Linux:  apt-get install libcairo2   (or your distro's equivalent)
+# And the DejaVu Sans / DejaVu Sans Mono fonts for correct text rendering.
+cairosvg==2.9.0

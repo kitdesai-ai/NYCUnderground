@@ -3,6 +3,9 @@ build/
 DerivedData/
 *.xcuserdatad/xcdebugger/
 *.xcuserstate
+*.ipa
+*.dSYM.zip
+*.dSYM
 
 # Archive & export
 *.xcarchive
@@ -12,5 +15,6 @@ ExportOptions.plist
 .DS_Store
 
 # Python
+venv/
 __pycache__/
 *.pyc
