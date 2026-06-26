@@ -1,9 +1,15 @@
 import SwiftUI
+import WidgetKit
 
 /// Shows arrival times for a single station, grouped by direction.
 struct StationArrivalsView: View {
     let station: Station
     let arrivals: [Arrival]
+
+    @AppStorage(SharedDefaults.Key.pinnedStopId, store: SharedDefaults.store)
+    private var pinnedStopId: String = ""
+
+    private var isPinned: Bool { pinnedStopId == station.id }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -12,6 +18,18 @@ struct StationArrivalsView: View {
                 Text(station.name)
                     .font(.headline)
                 Spacer()
+                Button {
+                    pinnedStopId = isPinned ? "" : station.id
+                    WidgetCenter.shared.reloadTimelines(ofKind: "StationArrivalsWidget")
+                } label: {
+                    Image(systemName: isPinned ? "pin.fill" : "pin")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(isPinned ? .blue : .secondary)
+                        .rotationEffect(.degrees(45))
+                        .frame(width: 24, height: 24)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(isPinned ? "Unpin from widget" : "Pin to widget")
                 ForEach(station.routes, id: \.self) { route in
                     RoutePill(route: route, size: 20)
                 }

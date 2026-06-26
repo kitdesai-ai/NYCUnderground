@@ -10,14 +10,16 @@ struct GTFSRealtimeParser {
     }
 
     /// Extract upcoming arrivals from a FeedMessage for a set of directional stop_ids.
-    /// Only returns arrivals in the future (after `after`).
+    /// Includes arrivals with predicted times up to 60s in the past — MTA's
+    /// predictions routinely slip a few seconds late, and these still display
+    /// usefully as "Now" rather than disappearing entirely.
     static func arrivals(
         from message: TransitRealtime_FeedMessage,
         forStopIds stopIds: Set<String>,
         after: Date = Date()
     ) -> [Arrival] {
         var results = [Arrival]()
-        let cutoff = after.timeIntervalSince1970
+        let cutoff = after.timeIntervalSince1970 - 60
 
         for entity in message.entity {
             guard entity.hasTripUpdate else { continue }

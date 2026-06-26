@@ -1,0 +1,16 @@
+# Xcode
+build/
+DerivedData/
+*.xcuserdatad/xcdebugger/
+*.xcuserstate
+
+# Archive & export
+*.xcarchive
+ExportOptions.plist
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc

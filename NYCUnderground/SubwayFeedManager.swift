@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import WidgetKit
 
 /// Polls MTA GTFS-RT feeds and provides real-time arrival data per station.
 /// Follows the Swift 6.2 ObservableObject pattern with explicit objectWillChange.
@@ -134,9 +135,16 @@ class SubwayFeedManager: NSObject, ObservableObject {
                 grouped[station.id, default: []].append(arrival)
             }
         }
-        // Sort each station's arrivals by time
+        // Sort each station's arrivals by time, bucketed to 30s with tripId
+        // as a stable tiebreaker so near-simultaneous arrivals (both rounding
+        // to "Now") don't visibly swap positions when GTFS-RT predictions jitter.
         for key in grouped.keys {
-            grouped[key]?.sort { $0.arrivalTime < $1.arrivalTime }
+            grouped[key]?.sort { a, b in
+                let aBucket = Int(a.arrivalTime.timeIntervalSince1970 / 30)
+                let bBucket = Int(b.arrivalTime.timeIntervalSince1970 / 30)
+                if aBucket != bBucket { return aBucket < bBucket }
+                return a.tripId < b.tripId
+            }
         }
 
         arrivalsByStation = grouped
@@ -144,5 +152,10 @@ class SubwayFeedManager: NSObject, ObservableObject {
         if allArrivals.isEmpty && fetchError != nil {
             lastError = fetchError
         }
+
+        // Refresh the home-screen widget with the data we just fetched.
+        // No-op when the widget extension isn't installed or when called from
+        // inside the extension itself.
+        WidgetCenter.shared.reloadTimelines(ofKind: "StationArrivalsWidget")
     }
 }

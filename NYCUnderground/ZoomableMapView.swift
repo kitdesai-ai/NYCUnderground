@@ -166,22 +166,25 @@ struct ZoomableMapView: UIViewRepresentable {
         coordinator.hasSetInitialZoom = true
         centerContent(in: scrollView, coordinator: coordinator)
 
-        // If location is already available (returning user), zoom to it immediately
+        // If location is already available (returning user), zoom to it after layout settles.
+        // Defer slightly so the scroll view's content size and bounds are fully updated.
         if !coordinator.hasZoomedToLocation,
            let location = userLocation,
            let point = CoordinateMapper.mapToImage(coordinate: location.coordinate, imageSize: imageSize) {
             coordinator.hasZoomedToLocation = true
 
-            let zoomScale = fitScale * 5.0
-            let visibleWidth = scrollView.bounds.width / zoomScale
-            let visibleHeight = scrollView.bounds.height / zoomScale
-            let zoomRect = CGRect(
-                x: point.x - visibleWidth / 2,
-                y: point.y - visibleHeight / 2,
-                width: visibleWidth,
-                height: visibleHeight
-            )
-            scrollView.zoom(to: zoomRect, animated: false)
+            DispatchQueue.main.async {
+                let zoomScale = fitScale * 5.0
+                let visibleWidth = scrollView.bounds.width / zoomScale
+                let visibleHeight = scrollView.bounds.height / zoomScale
+                let zoomRect = CGRect(
+                    x: point.x - visibleWidth / 2,
+                    y: point.y - visibleHeight / 2,
+                    width: visibleWidth,
+                    height: visibleHeight
+                )
+                scrollView.zoom(to: zoomRect, animated: false)
+            }
         }
     }
 
@@ -199,7 +202,7 @@ struct ZoomableMapView: UIViewRepresentable {
             coordinate: location.coordinate,
             imageSize: imageSize
         ) {
-            print("📍 Location dot → pixel: \(point), imageSize: \(imageSize)")
+//            print("📍 Location dot → pixel: \(point), imageSize: \(imageSize)")
             dot.center = point
             dot.isHidden = false
 
@@ -264,7 +267,8 @@ struct ZoomableMapView: UIViewRepresentable {
             // Calibration mode: show station picker
             if calibrationMode {
                 let tapPoint = CGPoint(x: normalizedX, y: normalizedY)
-                print("📌 TAP — normalizedX: \(String(format: "%.3f", normalizedX)), normalizedY: \(String(format: "%.3f", normalizedY))")
+                print("📌 TAP — normalizedX, normalizedY: \(String(format: "%.3f", normalizedX)), \(String(format: "%.3f", normalizedY))")
+                UIPasteboard.general.string = "\(String(format: "%.3f", normalizedX)), \(String(format: "%.3f", normalizedY))"
 
                 // Visual marker
                 let marker = UIView(frame: CGRect(x: 0, y: 0, width: 30, height: 30))
@@ -285,7 +289,7 @@ struct ZoomableMapView: UIViewRepresentable {
                 return
             }
 
-            // Station detection: try OCR first, fall back to distance-based matching
+            // Station detection: fast coordinate lookup using pre-indexed positions
             let scrollView = imageView.superview as? UIScrollView
             let zoomScale = scrollView?.zoomScale ?? 1.0
             let minZoomScale = scrollView?.minimumZoomScale ?? 1.0
@@ -300,54 +304,23 @@ struct ZoomableMapView: UIViewRepresentable {
             imageView.addSubview(highlight)
 
             let tapNormalized = CGPoint(x: normalizedX, y: normalizedY)
-            let capturedImage = imageView.image
-            let capturedTapInImage = tapInImage
-            let capturedImageSize = imageSize
-            let capturedOnStationsTapped = onStationsTapped
+            let stations = StationDatabase.stations(
+                nearNormalizedPoint: tapNormalized,
+                imageSize: imageSize,
+                zoomScale: zoomScale,
+                minZoomScale: minZoomScale
+            )
 
-            Task { @MainActor in
-                var stations: [Station] = []
+            // Animate highlight out
+            UIView.animate(withDuration: 0.4, delay: 0.1, options: []) {
+                highlight.alpha = 0
+                highlight.transform = CGAffineTransform(scaleX: 1.5, y: 1.5)
+            } completion: { _ in
+                highlight.removeFromSuperview()
+            }
 
-                // Try OCR-based detection
-                if let image = capturedImage {
-                    // Adapt crop radius to zoom level: larger crop when zoomed out
-                    let effectiveZoom = zoomScale / minZoomScale
-                    let cropRadius: CGFloat = max(100, 300 / effectiveZoom)
-                    stations = await StationOCR.recognizeStations(
-                        in: image,
-                        nearPoint: capturedTapInImage,
-                        imageSize: capturedImageSize,
-                        cropRadius: cropRadius
-                    )
-                    if !stations.isEmpty {
-                        print("✅ OCR found \(stations.count) station(s)")
-                    }
-                }
-
-                // Fall back to distance-based matching
-                if stations.isEmpty {
-                    stations = StationDatabase.stations(
-                        nearNormalizedPoint: tapNormalized,
-                        imageSize: capturedImageSize,
-                        zoomScale: zoomScale,
-                        minZoomScale: minZoomScale
-                    )
-                    if !stations.isEmpty {
-                        print("📍 Fallback distance match: \(stations.map(\.name).joined(separator: ", "))")
-                    }
-                }
-
-                // Animate highlight out
-                UIView.animate(withDuration: 0.4, delay: 0.1, options: []) {
-                    highlight.alpha = 0
-                    highlight.transform = CGAffineTransform(scaleX: 1.5, y: 1.5)
-                } completion: { _ in
-                    highlight.removeFromSuperview()
-                }
-
-                if !stations.isEmpty {
-                    capturedOnStationsTapped?(stations)
-                }
+            if !stations.isEmpty {
+                onStationsTapped?(stations)
             }
         }
 

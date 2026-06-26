@@ -22,4 +22,11 @@ struct Arrival: Identifiable {
         if mins == 0 { return "Now" }
         return "\(mins) min"
     }
+
+    /// Abbreviated form for tight widget layouts: "Now", "1m", "12m".
+    var minutesAwayShort: String {
+        let mins = minutesAway
+        if mins == 0 { return "Now" }
+        return "\(mins)m"
+    }
 }

@@ -72,6 +72,9 @@ struct ContentView: View {
         .onChange(of: locationManager.location) {
             updateNearbyStations()
         }
+        .onOpenURL { url in
+            handleDeepLink(url)
+        }
         .animation(.easeInOut(duration: 0.3), value: showLocationBanner)
         .sheet(isPresented: $showNearbySheet) {
             NearbyStationsSheet(
@@ -185,6 +188,22 @@ struct ContentView: View {
             }
         }
         .presentationDetents([.medium])
+    }
+
+    // MARK: - Deep Link
+
+    /// Handles `nycunderground://station/<stopId>` URLs from the widget.
+    private func handleDeepLink(_ url: URL) {
+        guard url.scheme == "nycunderground", url.host == "station" else { return }
+        let stopId = url.lastPathComponent
+        guard !stopId.isEmpty,
+              let station = StationDatabase.station(forStopId: stopId) else { return }
+
+        // Dismiss any other open sheets first to avoid presentation conflicts.
+        tappedStations = []
+        showNearbySheet = false
+        calibrationTapPoint = nil
+        selectedStation = station
     }
 
     // MARK: - Nearby Stations

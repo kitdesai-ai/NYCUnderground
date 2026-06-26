@@ -1,0 +1,48 @@
+name: Deploy GitHub Pages
+
+# Publishes the static site in /docs (landing page, privacy policy, support page)
+# to GitHub Pages. After this runs once, enable Pages in the repo:
+#   Settings → Pages → Build and deployment → Source: "GitHub Actions"
+# Live URLs:
+#   https://kitdesai-ai.github.io/nycunderground/
+#   https://kitdesai-ai.github.io/nycunderground/privacy-policy.html
+#   https://kitdesai-ai.github.io/nycunderground/support.html
+
+on:
+  push:
+    branches: [main, master]
+    paths: ["docs/**", ".github/workflows/pages.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+        with:
+          # Auto-enables Pages (build type: GitHub Actions) on first run, so the
+          # workflow doesn't fail with "Get Pages site failed / Not Found".
+          enablement: true
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

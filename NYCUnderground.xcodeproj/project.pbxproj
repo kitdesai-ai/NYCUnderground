@@ -9,16 +9,92 @@
 /* Begin PBXBuildFile section */
 		BC2098F82F5F30120048A3C8 /* SwiftProtobuf in Frameworks */ = {isa = PBXBuildFile; productRef = BC2098F72F5F30120048A3C8 /* SwiftProtobuf */; };
 		BC2098FA2F5F30120048A3C8 /* SwiftProtobufPluginLibrary in Frameworks */ = {isa = PBXBuildFile; productRef = BC2098F92F5F30120048A3C8 /* SwiftProtobufPluginLibrary */; };
+		BCAA00102F58BF700048A3C8 /* SwiftProtobuf in Frameworks */ = {isa = PBXBuildFile; productRef = BCAA00112F58BF700048A3C8 /* SwiftProtobuf */; };
+		BCD98F472FA525B500FEECD5 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BCD98F462FA525B500FEECD5 /* WidgetKit.framework */; };
+		BCD98F492FA525B500FEECD5 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BCD98F482FA525B500FEECD5 /* SwiftUI.framework */; };
+		BCD98F562FA525B600FEECD5 /* NYCUndergroundWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = BCD98F442FA525B500FEECD5 /* NYCUndergroundWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		BCD98F542FA525B600FEECD5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = BC2097E82F58BF700048A3C8 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = BCD98F432FA525B500FEECD5;
+			remoteInfo = NYCUndergroundWidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		BCD98F5B2FA525B600FEECD5 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				BCD98F562FA525B600FEECD5 /* NYCUndergroundWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		BC2097F02F58BF700048A3C8 /* NYCUnderground.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NYCUnderground.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		BCD98F442FA525B500FEECD5 /* NYCUndergroundWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = NYCUndergroundWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		BCD98F462FA525B500FEECD5 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		BCD98F482FA525B500FEECD5 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		BCAA00012F58BF700048A3C8 /* Exceptions for "NYCUnderground" folder in "NYCUnderground" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = BC2097EF2F58BF700048A3C8 /* NYCUnderground */;
+		};
+		BCAA00202F58BF700048A3C8 /* Exceptions for "NYCUnderground" folder in "NYCUndergroundWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Assets.xcassets,
+				ContentView.swift,
+				Info.plist,
+				LocationManager.swift,
+				NearbyStationsSheet.swift,
+				NYCUndergroundApp.swift,
+				"Proto/gtfs-realtime.proto",
+				station_positions.json,
+				StationArrivalsView.swift,
+				ZoomableMapView.swift,
+			);
+			target = BCD98F432FA525B500FEECD5 /* NYCUndergroundWidgetExtension */;
+		};
+		BCD98F5A2FA525B600FEECD5 /* Exceptions for "NYCUndergroundWidget" folder in "NYCUndergroundWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = BCD98F432FA525B500FEECD5 /* NYCUndergroundWidgetExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		BC2097F22F58BF700048A3C8 /* NYCUnderground */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				BCAA00012F58BF700048A3C8 /* Exceptions for "NYCUnderground" folder in "NYCUnderground" target */,
+				BCAA00202F58BF700048A3C8 /* Exceptions for "NYCUnderground" folder in "NYCUndergroundWidgetExtension" target */,
+			);
 			path = NYCUnderground;
+			sourceTree = "<group>";
+		};
+		BCD98F4A2FA525B500FEECD5 /* NYCUndergroundWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				BCD98F5A2FA525B600FEECD5 /* Exceptions for "NYCUndergroundWidget" folder in "NYCUndergroundWidgetExtension" target */,
+			);
+			path = NYCUndergroundWidget;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -33,6 +109,16 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		BCD98F412FA525B500FEECD5 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BCD98F492FA525B500FEECD5 /* SwiftUI.framework in Frameworks */,
+				BCD98F472FA525B500FEECD5 /* WidgetKit.framework in Frameworks */,
+				BCAA00102F58BF700048A3C8 /* SwiftProtobuf in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -40,6 +126,8 @@
 			isa = PBXGroup;
 			children = (
 				BC2097F22F58BF700048A3C8 /* NYCUnderground */,
+				BCD98F4A2FA525B500FEECD5 /* NYCUndergroundWidget */,
+				BCD98F452FA525B500FEECD5 /* Frameworks */,
 				BC2097F12F58BF700048A3C8 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -48,8 +136,18 @@
 			isa = PBXGroup;
 			children = (
 				BC2097F02F58BF700048A3C8 /* NYCUnderground.app */,
+				BCD98F442FA525B500FEECD5 /* NYCUndergroundWidgetExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		BCD98F452FA525B500FEECD5 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				BCD98F462FA525B500FEECD5 /* WidgetKit.framework */,
+				BCD98F482FA525B500FEECD5 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -62,10 +160,12 @@
 				BC2097EC2F58BF700048A3C8 /* Sources */,
 				BC2097ED2F58BF700048A3C8 /* Frameworks */,
 				BC2097EE2F58BF700048A3C8 /* Resources */,
+				BCD98F5B2FA525B600FEECD5 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				BCD98F552FA525B600FEECD5 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				BC2097F22F58BF700048A3C8 /* NYCUnderground */,
@@ -78,6 +178,30 @@
 			productName = NYCUnderground;
 			productReference = BC2097F02F58BF700048A3C8 /* NYCUnderground.app */;
 			productType = "com.apple.product-type.application";
+		};
+		BCD98F432FA525B500FEECD5 /* NYCUndergroundWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BCD98F572FA525B600FEECD5 /* Build configuration list for PBXNativeTarget "NYCUndergroundWidgetExtension" */;
+			buildPhases = (
+				BCD98F402FA525B500FEECD5 /* Sources */,
+				BCD98F412FA525B500FEECD5 /* Frameworks */,
+				BCD98F422FA525B500FEECD5 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				BC2097F22F58BF700048A3C8 /* NYCUnderground */,
+				BCD98F4A2FA525B500FEECD5 /* NYCUndergroundWidget */,
+			);
+			name = NYCUndergroundWidgetExtension;
+			packageProductDependencies = (
+				BCAA00112F58BF700048A3C8 /* SwiftProtobuf */,
+			);
+			productName = NYCUndergroundWidgetExtension;
+			productReference = BCD98F442FA525B500FEECD5 /* NYCUndergroundWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -92,6 +216,9 @@
 					BC2097EF2F58BF700048A3C8 = {
 						CreatedOnToolsVersion = 26.3;
 						LastSwiftMigration = 2630;
+					};
+					BCD98F432FA525B500FEECD5 = {
+						CreatedOnToolsVersion = 26.3;
 					};
 				};
 			};
@@ -113,12 +240,20 @@
 			projectRoot = "";
 			targets = (
 				BC2097EF2F58BF700048A3C8 /* NYCUnderground */,
+				BCD98F432FA525B500FEECD5 /* NYCUndergroundWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		BC2097EE2F58BF700048A3C8 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BCD98F422FA525B500FEECD5 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -135,7 +270,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		BCD98F402FA525B500FEECD5 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		BCD98F552FA525B600FEECD5 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = BCD98F432FA525B500FEECD5 /* NYCUndergroundWidgetExtension */;
+			targetProxy = BCD98F542FA525B600FEECD5 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		BC2097F92F58BF720048A3C8 /* Debug */ = {
@@ -260,6 +410,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = NYCUnderground/NYCUnderground.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 46G2XD5786;
@@ -267,20 +418,9 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = NYCUnderground/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "NYC Underground";
-				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Shows your location on the subway map";
-				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
-				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
-				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
-				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
-				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
@@ -291,14 +431,14 @@
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TARGETED_DEVICE_FAMILY = 1;
 				XROS_DEPLOYMENT_TARGET = 26.2;
 			};
 			name = Debug;
@@ -309,6 +449,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = NYCUnderground/NYCUnderground.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 46G2XD5786;
@@ -316,20 +457,9 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = NYCUnderground/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "NYC Underground";
-				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Shows your location on the subway map";
-				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
-				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
-				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
-				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
-				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
@@ -340,14 +470,77 @@
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TARGETED_DEVICE_FAMILY = 1;
 				XROS_DEPLOYMENT_TARGET = 26.2;
+			};
+			name = Release;
+		};
+		BCD98F582FA525B600FEECD5 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = NYCUndergroundWidget/NYCUndergroundWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 46G2XD5786;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = NYCUndergroundWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kitdesai.NYCUnderground.Widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		BCD98F592FA525B600FEECD5 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = NYCUndergroundWidget/NYCUndergroundWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 46G2XD5786;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = NYCUndergroundWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kitdesai.NYCUnderground.Widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
 		};
@@ -368,6 +561,15 @@
 			buildConfigurations = (
 				BC2097FC2F58BF720048A3C8 /* Debug */,
 				BC2097FD2F58BF720048A3C8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		BCD98F572FA525B600FEECD5 /* Build configuration list for PBXNativeTarget "NYCUndergroundWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BCD98F582FA525B600FEECD5 /* Debug */,
+				BCD98F592FA525B600FEECD5 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -395,6 +597,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = BC2098F62F5F30120048A3C8 /* XCRemoteSwiftPackageReference "swift-protobuf" */;
 			productName = SwiftProtobufPluginLibrary;
+		};
+		BCAA00112F58BF700048A3C8 /* SwiftProtobuf */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BC2098F62F5F30120048A3C8 /* XCRemoteSwiftPackageReference "swift-protobuf" */;
+			productName = SwiftProtobuf;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

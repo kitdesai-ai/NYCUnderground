@@ -71,7 +71,6 @@ Two-layer approach: OCR primary, distance fallback.
 `SubwayFeedManager` polls 8 MTA feed endpoints (one per line group) every 30 seconds. Each feed returns protobuf with `TripUpdate` entities containing `StopTimeUpdate` with arrival times. The `GTFSRealtimeParser` extracts arrivals matching requested station stop_ids.
 
 ## Known Issues / TODOs
-- **OCR latency**: Vision OCR adds ~200-500ms to tap response. Could pre-index text positions on app launch.
 - **No loading indicator**: Brief white screen on cold launch before the map image appears.
 - **Memory**: The 6766×8060 bitmap is ~200MB uncompressed. Fine on modern iPhones but could tile if needed.
 - **Light mode only**: App forces `.preferredColorScheme(.light)` since the MTA map has a white background.
