@@ -96,7 +96,7 @@ https://kitdesai-ai.github.io/nycunderground/
 
 ### Copyright
 ```
-2026 Kit Desai
+2026 Kit Desai, LLC
 ```
 
 ### Version & Build
