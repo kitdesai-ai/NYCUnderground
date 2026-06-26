@@ -357,17 +357,24 @@ ATLANTIC = lambda: screen_arrivals(
      ("CONEY ISLAND & BAY RIDGE", [("N", 2), ("Q", 7), ("R", 12)]),
      ("BRONX & QUEENS", [("D", 4), ("B", 9)])])
 
+# Per-slide accent = the MTA route-bullet color for that line group.
+MTA_BLUE   = ROUTE["A"]   # #003DA3  (A/C/E)
+MTA_RED    = ROUTE["1"]   # #ED3D45  (1/2/3)
+MTA_GREEN  = ROUTE["4"]   # #009440  (4/5/6)
+MTA_YELLOW = ROUTE["N"]   # #FCCF1A  (N/Q/R/W)
+MTA_ORANGE = ROUTE["B"]   # #FF6300  (B/D/F/M)
+
 SLIDES = [
     ("01-map.png",      ["The whole subway,", "*in your pocket.*"],
-     "The official map, zoomable and bundled in.", screen_map,     ACCENT),
+     "The official map, zoomable and bundled in.", screen_map,     MTA_BLUE),
     ("02-arrivals.png", ["Real-time arrivals,", "*one tap away.*"],
-     "Tap any station for live train times.",      TIMES_SQ,       ACCENT),
+     "Tap any station for live train times.",      TIMES_SQ,       MTA_RED),
     ("03-nearby.png",   ["The closest trains,", "*right now.*"],
-     "Your nearest stations, ranked by distance.", screen_nearby,  "#34C759"),
+     "Your nearest stations, ranked by distance.", screen_nearby,  MTA_GREEN),
     ("04-location.png", ["Always know", "*where you are.*"],
-     "A live GPS dot, right on the map.",          screen_locating, ACCENT),
+     "A live GPS dot, right on the map.",          screen_locating, MTA_YELLOW),
     ("05-hub.png",      ["Every line,", "*every borough.*"],
-     "All 445 stations. Live MTA data at your fingertips.", ATLANTIC,     "#FF6300"),
+     "All 445 stations. Live MTA data at your fingertips.", ATLANTIC,     MTA_ORANGE),
 ]
 
 RAW = os.path.join(OUT, "raw")
