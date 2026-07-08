@@ -90,16 +90,19 @@ struct ContentView: View {
             .presentationDetents([.medium, .large])
         }
         .sheet(item: $selectedStation) { station in
-            NavigationStack {
+            // No NavigationStack/title here: StationArrivalsView already shows the
+            // station name + route pills as its header, so a nav bar would just
+            // repeat the name and add empty space at the top.
+            VStack(spacing: 0) {
                 StationArrivalsView(
                     station: station,
                     arrivals: feedManager.arrivalsByStation[station.id] ?? []
                 )
                 .padding()
-                .navigationTitle(station.name)
-                .navigationBarTitleDisplayMode(.inline)
+                Spacer(minLength: 0)
             }
-            .presentationDetents([.height(300), .medium])
+            .presentationDetents([.height(260), .medium])
+            .presentationDragIndicator(.visible)
             .onAppear {
                 feedManager.startPolling(forStations: [station])
             }

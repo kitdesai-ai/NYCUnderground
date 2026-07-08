@@ -43,7 +43,7 @@ struct StationArrivalsView: View {
                 ForEach(Arrival.Direction.allCases, id: \.self) { direction in
                     let dirArrivals = arrivals
                         .filter { $0.direction == direction }
-                        .prefix(4)
+                        .prefix(12)
 
                     if !dirArrivals.isEmpty {
                         let firstArrival = dirArrivals.first!
@@ -63,20 +63,23 @@ struct StationArrivalsView: View {
                 .foregroundColor(.secondary)
                 .textCase(.uppercase)
 
-            HStack(spacing: 8) {
-                ForEach(arrivals) { arrival in
-                    HStack(spacing: 3) {
-                        RoutePill(route: arrival.routeId, size: 18)
-                        Text(arrival.minutesAwayText)
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(arrival.minutesAway <= 1 ? .red : .primary)
+            // Horizontally scrollable so more upcoming trains are reachable
+            // than fit on screen.
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(arrivals) { arrival in
+                        HStack(spacing: 3) {
+                            RoutePill(route: arrival.routeId, size: 18)
+                            Text(arrival.minutesAwayText)
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(arrival.minutesAway <= 1 ? .red : .primary)
+                        }
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(6)
                     }
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 3)
-                    .background(Color(.systemGray6))
-                    .cornerRadius(6)
                 }
-                Spacer()
             }
         }
     }
