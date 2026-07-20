@@ -5,6 +5,10 @@ import WidgetKit
 struct StationArrivalsView: View {
     let station: Station
     let arrivals: [Arrival]
+    /// When true (single-station sheet), each direction's times scroll
+    /// horizontally so more upcoming trains are reachable. In multi-station
+    /// lists this stays false and only the first few times are shown.
+    var scrollableArrivals: Bool = false
 
     @AppStorage(SharedDefaults.Key.pinnedStopId, store: SharedDefaults.store)
     private var pinnedStopId: String = ""
@@ -43,7 +47,7 @@ struct StationArrivalsView: View {
                 ForEach(Arrival.Direction.allCases, id: \.self) { direction in
                     let dirArrivals = arrivals
                         .filter { $0.direction == direction }
-                        .prefix(12)
+                        .prefix(scrollableArrivals ? 12 : 4)
 
                     if !dirArrivals.isEmpty {
                         let firstArrival = dirArrivals.first!
@@ -63,24 +67,33 @@ struct StationArrivalsView: View {
                 .foregroundColor(.secondary)
                 .textCase(.uppercase)
 
-            // Horizontally scrollable so more upcoming trains are reachable
-            // than fit on screen.
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(arrivals) { arrival in
-                        HStack(spacing: 3) {
-                            RoutePill(route: arrival.routeId, size: 18)
-                            Text(arrival.minutesAwayText)
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundColor(arrival.minutesAway <= 1 ? .red : .primary)
-                        }
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3)
-                        .background(Color(.systemGray6))
-                        .cornerRadius(6)
+            if scrollableArrivals {
+                // Single-station sheet: scroll horizontally for more trains.
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(arrivals) { arrivalChip(for: $0) }
                     }
+                }
+            } else {
+                // Multi-station lists: static row, first few times only.
+                HStack(spacing: 8) {
+                    ForEach(arrivals) { arrivalChip(for: $0) }
+                    Spacer()
                 }
             }
         }
+    }
+
+    private func arrivalChip(for arrival: Arrival) -> some View {
+        HStack(spacing: 3) {
+            RoutePill(route: arrival.routeId, size: 18)
+            Text(arrival.minutesAwayText)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(arrival.minutesAway <= 1 ? .red : .primary)
+        }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 3)
+        .background(Color(.systemGray6))
+        .cornerRadius(6)
     }
 }

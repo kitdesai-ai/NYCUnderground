@@ -96,7 +96,8 @@ struct ContentView: View {
             VStack(spacing: 0) {
                 StationArrivalsView(
                     station: station,
-                    arrivals: feedManager.arrivalsByStation[station.id] ?? []
+                    arrivals: feedManager.arrivalsByStation[station.id] ?? [],
+                    scrollableArrivals: true
                 )
                 .padding()
                 Spacer(minLength: 0)
