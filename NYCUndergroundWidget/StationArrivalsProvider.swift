@@ -116,10 +116,21 @@ final class StationArrivalsProvider: NSObject, TimelineProvider, CLLocationManag
             }
         }
 
-        // Fallback to pinned station
+        // Fallback 1: the station the user explicitly pinned.
         if let stopId = SharedDefaults.pinnedStopId,
            let pinned = StationDatabase.station(forStopId: stopId) {
             return pinned
+        }
+
+        // Fallback 2: last-known location cached by the app. This is what keeps
+        // the widget alive after the "When In Use" grace window expires and a live
+        // fix is no longer available. Arrivals for the resolved station are still
+        // fetched live in buildEntry().
+        if let cached = SharedDefaults.cachedLocation {
+            let coord = CLLocationCoordinate2D(latitude: cached.latitude, longitude: cached.longitude)
+            if let nearest = StationDatabase.nearestStations(to: coord, count: 1).first {
+                return nearest
+            }
         }
 
         return nil

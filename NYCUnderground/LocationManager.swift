@@ -42,6 +42,13 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         guard let newLocation = locations.last else { return }
         Task { @MainActor in
             self.location = newLocation
+            // Mirror the fix into the App Group so the widget has a last-known
+            // location to fall back on once its live-location grace window expires.
+            SharedDefaults.cachedLocation = SharedDefaults.CachedLocation(
+                latitude: newLocation.coordinate.latitude,
+                longitude: newLocation.coordinate.longitude,
+                date: newLocation.timestamp
+            )
         }
     }
 
@@ -49,8 +56,17 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         let status = manager.authorizationStatus
         Task { @MainActor in
             self.authorizationStatus = status
-            if status == .authorizedWhenInUse || status == .authorizedAlways {
+            switch status {
+            case .authorizedWhenInUse:
+                // Ask to upgrade to "Always" so the widget can read live location
+                // outside the app's foreground grace window. iOS surfaces this
+                // prompt only once, so repeated callbacks won't nag the user.
+                manager.requestAlwaysAuthorization()
                 self.startUpdating()
+            case .authorizedAlways:
+                self.startUpdating()
+            default:
+                break
             }
         }
     }
