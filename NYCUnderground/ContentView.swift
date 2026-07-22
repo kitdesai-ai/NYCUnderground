@@ -107,7 +107,7 @@ struct ContentView: View {
                     scrollableArrivals: true
                 )
                 .padding(.horizontal, 20)
-                .padding(.top, 16)
+                .padding(.top, 30)
                 .padding(.bottom, 24)
                 // Fix the vertical size to the content's ideal height so the
                 // measurement below reflects the true content height rather than
