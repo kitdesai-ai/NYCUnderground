@@ -16,11 +16,11 @@ struct StationArrivalsView: View {
     private var isPinned: Bool { pinnedStopId == station.id }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: scrollableArrivals ? 18 : 10) {
             // Station name + route pills
             HStack(spacing: 6) {
                 Text(station.name)
-                    .font(.headline)
+                    .font(scrollableArrivals ? .title3.bold() : .headline)
                 Spacer()
                 Button {
                     pinnedStopId = isPinned ? "" : station.id
@@ -61,9 +61,9 @@ struct StationArrivalsView: View {
     }
 
     private func directionRow(label: String, arrivals: [Arrival]) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: scrollableArrivals ? 8 : 4) {
             Text(label)
-                .font(.caption)
+                .font(scrollableArrivals ? .footnote : .caption)
                 .foregroundColor(.secondary)
                 .textCase(.uppercase)
 
@@ -85,15 +85,15 @@ struct StationArrivalsView: View {
     }
 
     private func arrivalChip(for arrival: Arrival) -> some View {
-        HStack(spacing: 3) {
-            RoutePill(route: arrival.routeId, size: 18)
+        HStack(spacing: scrollableArrivals ? 5 : 3) {
+            RoutePill(route: arrival.routeId, size: scrollableArrivals ? 20 : 18)
             Text(arrival.minutesAwayText)
-                .font(.system(size: 13, weight: .medium))
+                .font(.system(size: scrollableArrivals ? 15 : 13, weight: .medium))
                 .foregroundColor(arrival.minutesAway <= 1 ? .red : .primary)
         }
-        .padding(.horizontal, 6)
-        .padding(.vertical, 3)
+        .padding(.horizontal, scrollableArrivals ? 10 : 6)
+        .padding(.vertical, scrollableArrivals ? 7 : 3)
         .background(Color(.systemGray6))
-        .cornerRadius(6)
+        .cornerRadius(scrollableArrivals ? 8 : 6)
     }
 }
