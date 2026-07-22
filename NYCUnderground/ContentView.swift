@@ -9,6 +9,9 @@ struct ContentView: View {
     @State private var selectedStation: Station? = nil
     @State private var tappedStations: [Station] = []
     @State private var nearbyStations: [Station] = []
+    /// Measured height of the single-station sheet's content, used as its detent
+    /// so the sheet hugs the content (no dead space at the bottom).
+    @State private var stationSheetHeight: CGFloat = 300
 
     // Calibration state
     @State private var calibrationTapPoint: CGPoint? = nil
@@ -90,16 +93,39 @@ struct ContentView: View {
             .presentationDetents([.medium, .large])
         }
         .sheet(item: $selectedStation) { station in
-            NavigationStack {
+            // No NavigationStack/title here: StationArrivalsView already shows the
+            // station name + route pills as its header, so a nav bar would just
+            // repeat the name and add empty space at the top.
+            //
+            // The sheet hugs its content: we measure the laid-out height and use it
+            // as the detent, so there's no dead space at the bottom regardless of
+            // how many directions the station has.
+            VStack(spacing: 0) {
                 StationArrivalsView(
                     station: station,
-                    arrivals: feedManager.arrivalsByStation[station.id] ?? []
+                    arrivals: feedManager.arrivalsByStation[station.id] ?? [],
+                    scrollableArrivals: true
                 )
-                .padding()
-                .navigationTitle(station.name)
-                .navigationBarTitleDisplayMode(.inline)
+                .padding(.horizontal, 20)
+                .padding(.top, 30)
+                .padding(.bottom, 24)
+                // Fix the vertical size to the content's ideal height so the
+                // measurement below reflects the true content height rather than
+                // being compressed by the current (possibly smaller) detent.
+                .fixedSize(horizontal: false, vertical: true)
+                .background(
+                    GeometryReader { proxy in
+                        Color.clear.preference(key: SheetContentHeightKey.self,
+                                               value: proxy.size.height)
+                    }
+                )
+                Spacer(minLength: 0)
             }
-            .presentationDetents([.height(300), .medium])
+            .onPreferenceChange(SheetContentHeightKey.self) { height in
+                if height > 0 { stationSheetHeight = height }
+            }
+            .presentationDetents([.height(stationSheetHeight)])
+            .presentationDragIndicator(.visible)
             .onAppear {
                 feedManager.startPolling(forStations: [station])
             }
@@ -331,6 +357,15 @@ struct ContentView: View {
             let miles = meters / 1609.34
             return String(format: "%.1f mi away", miles)
         }
+    }
+}
+
+/// Reports the laid-out height of the single-station sheet's content so the
+/// sheet can size its detent to fit.
+private struct SheetContentHeightKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
     }
 }
 

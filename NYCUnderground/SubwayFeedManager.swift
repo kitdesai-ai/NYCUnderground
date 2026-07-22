@@ -102,25 +102,27 @@ class SubwayFeedManager: NSObject, ObservableObject {
 
         // Fetch feeds concurrently
         var allArrivals = [Arrival]()
+        var succeededFeeds = Set<String>()
         var fetchError: String?
 
-        await withTaskGroup(of: [Arrival]?.self) { group in
+        await withTaskGroup(of: (String, [Arrival]?).self) { group in
             for key in feedKeys {
                 guard let url = Self.feedURLs[key] else { continue }
                 group.addTask {
                     do {
                         let (data, _) = try await self.session.data(from: url)
                         let message = try GTFSRealtimeParser.parse(data)
-                        return GTFSRealtimeParser.arrivals(from: message, forStopIds: allStopIds)
+                        return (key, GTFSRealtimeParser.arrivals(from: message, forStopIds: allStopIds))
                     } catch {
                         print("⚠️ Feed \(key) failed: \(error.localizedDescription)")
-                        return nil
+                        return (key, nil)
                     }
                 }
             }
 
-            for await result in group {
+            for await (key, result) in group {
                 if let arrivals = result {
+                    succeededFeeds.insert(key)
                     allArrivals.append(contentsOf: arrivals)
                 } else {
                     fetchError = "Some feeds unavailable"
@@ -128,7 +130,7 @@ class SubwayFeedManager: NSObject, ObservableObject {
             }
         }
 
-        // Group arrivals by parent station
+        // Group arrivals (from feeds that succeeded this cycle) by parent station.
         var grouped = [String: [Arrival]]()
         for arrival in allArrivals {
             if let station = StationDatabase.station(forStopId: arrival.stopId) {
@@ -147,7 +149,19 @@ class SubwayFeedManager: NSObject, ObservableObject {
             }
         }
 
-        arrivalsByStation = grouped
+        // Merge instead of replacing the whole dictionary: only overwrite a
+        // station's arrivals when every feed it depends on succeeded this cycle.
+        // If one of its feeds hiccuped, keep the station's previous arrivals
+        // rather than blanking it to "No upcoming trains". Arrival times are
+        // absolute, so briefly-stale data still counts down correctly.
+        var merged = arrivalsByStation
+        for station in targetStations {
+            let stationFeeds = Set(station.routes.compactMap { Self.routeToFeed[$0] })
+            if stationFeeds.isSubset(of: succeededFeeds) {
+                merged[station.id] = grouped[station.id] ?? []
+            }
+        }
+        arrivalsByStation = merged
         isLoading = false
         if allArrivals.isEmpty && fetchError != nil {
             lastError = fetchError
